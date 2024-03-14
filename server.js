@@ -6,9 +6,8 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   host: "localhost",
   user: "root",
-  password: "strong_password",
+  password: "Temporal2021+",
   database: "persona",
-  port: 33060,
 });
 
 // Establecer la conexión a la base de datos
@@ -52,6 +51,51 @@ app.get("/personas", (req, res) => {
 
       // Enviar los resultados en formato JSON al navegador web
       res.json(results);
+    });
+  });
+});
+// Middleware for parsing JSON and urlencoded form data
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+// Endpoint POST para guardar los datos en la tabla persona
+app.post("/personas", (req, res) => {
+  var nombre = req.body.nombre;
+  var apellido = req.body.apellido;
+  var saldo = req.body.saldo;
+
+  if (!nombre || !apellido || !saldo) {
+    res.status(400).json({ error: "Faltan datos requeridos" });
+    return;
+  }
+
+  const query =
+    "INSERT INTO persona (nombre, apellido, saldo) VALUES (?, ?, ?)";
+
+  // Obtener una conexión del pool
+  pool.getConnection((err, connection) => {
+    if (err) {
+      console.error("Error al obtener una conexión del pool: ", err);
+      res
+        .status(500)
+        .json({ error: "Error al guardar los datos en la tabla persona" });
+      return;
+    }
+
+    // Ejecutar la consulta a la base de datos
+    connection.query(query, [nombre, apellido, saldo], (err, result) => {
+      connection.release(); // Liberar la conexión
+
+      if (err) {
+        console.error("Error al ejecutar la consulta: ", err);
+        res
+          .status(500)
+          .json({ error: "Error al guardar los datos en la tabla persona" });
+        return;
+      }
+
+      // Enviar el ID del registro creado en formato JSON al navegador web
+      res.json({ id: result.insertId });
     });
   });
 });
